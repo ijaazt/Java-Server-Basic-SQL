@@ -3,14 +3,15 @@ package src.main.java.sql;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Objects;
 
-public class DeleteUpdate {
-    DeleteUpdate() throws SQLException {
+class DeleteUpdate {
+    private DeleteUpdate() throws SQLException {
         new SelectJoin();
         Connection connection = MyConnection.getConnection();
-        Statement statement = connection.createStatement();
-        statement.execute("delete from " + CreateCities.TABLE_NAME + " where " + CreateCities.COLUMN_CITY_NAME + "='Ann Arbor'");
-        statement.execute("update " + CreateCities.TABLE_NAME + " set " + CreateCities.COLUMN_POPULATION + "=1 where " + CreateCities.COLUMN_CITY_NAME + "='Detroit'");
+        Statement statement = Objects.requireNonNull(connection).createStatement();
+        statement.execute("DELETE FROM " + CityTable.CITY_TABLE + " WHERE " + CityTable.CITY + "='Ann Arbor'");
+        statement.execute("UPDATE " + CityTable.CITY_TABLE + " SET " + CityTable.POPULATION + "=1 WHERE " + CityTable.CITY + "='Detroit'");
         connection.close();
         System.out.print("New Join");
         new SelectJoin();

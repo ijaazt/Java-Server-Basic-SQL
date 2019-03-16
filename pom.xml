@@ -49,7 +49,7 @@
                         <configuration>
                             <sourceDirs>
                                 <source>src/main/java</source>
-                                <source></source>
+                                <source/>
                             </sourceDirs>
                         </configuration>
                     </execution>

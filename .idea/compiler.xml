@@ -7,6 +7,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="JH5_mitello" />
+        <module name="Soparific" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="8" />

@@ -1,75 +1,44 @@
 package src.main.java.sql;
 
-import models.State;
 
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
-public class CreateStates {
+import static java.lang.System.out;
+import static java.util.Objects.requireNonNull;
+import static src.main.java.sql.ColoredTerminal.*;
 
-    Connection connection = MyConnection.getConnection();
+class State {
+    String name;
+    String region;
+    String largestCity;
+    String capital;
+    int population;
 
-    void createTable() throws SQLException, ClassNotFoundException {
-        connection.createStatement().execute("create table if not exists States (name varchar(25), region varchar(25), largestCity varchar (25), capital varchar (25), population int );");
-    }
+    State() {
 
-    void addState(State state) throws SQLException {
-        PreparedStatement preparedStatement = connection.prepareStatement("insert into States values (?, ?, ?, ?, ?)");
-        preparedStatement.setObject(1, state.getName());
-        preparedStatement.setObject(2, state.getRegion());
-        preparedStatement.setObject(3, state.getLargestCity());
-        preparedStatement.setObject(4, state.getCapital());
-        preparedStatement.setObject(5, state.getPopulation());
-        preparedStatement.execute();
-    }
-    private void setParams(String[] params, PreparedStatement statement) throws SQLException {
-        if(params != null && params.length != 0) {
-            for (int i = 1; i < params.length + 1; i++) {
-                statement.setString(i, params[i-1]);
-            }
-        }
-    }
-    void updateState(String whereQuery, String[] params, State modifiedState) throws SQLException {
-        if(whereQuery == null)
-            whereQuery = "";
-        PreparedStatement preparedStatement = connection.prepareStatement("update States set name='" + modifiedState.getName() + "', capital='" + modifiedState.getCapital() + "', largestCity='" + modifiedState.getLargestCity()+ "', population=" + modifiedState.getPopulation() + ", region='" +modifiedState.getRegion() + "' " + whereQuery);
-        setParams(params,preparedStatement);
-        preparedStatement.execute();
     }
 
-    private State toState(ResultSet set) throws SQLException {
-        return new State(set.getString(1), set.getString(2),
-                set.getString(3), set.getString(4),
-                set.getInt(5));
+    State(String name, String region, String largestCity, String capital, int population) {
+        this.name = name;
+        this.region = region;
+        this.largestCity = largestCity;
+        this.capital = capital;
+        this.population = population;
     }
-    List<State> getStates(String whereQuery, String[] params) throws SQLException {
-        ArrayList<State> states = new ArrayList<>();
-        if(whereQuery == null) whereQuery = "";
-        PreparedStatement statement = connection.prepareStatement("select * from States "+ whereQuery);
-        setParams(params, statement);
-        ResultSet set = statement.executeQuery();
-        while(set.next()) {
-            states.add(toState(set));
-        }
-        return states;
-    }
+}
 
-    void printTable() throws SQLException {
-        System.out.format("%45s\n", "State Table");
-        System.out.format("%15s%15s%15s%15s%15s\n", "StateName", "Region", "LargestCity", "Capital", "Population");
-        List<State> states = getStates(null, null);
-        for(State state: states) {
-            System.out.format("%15s%15s%15s%15s%15s\n", state.getName(), state.getRegion(), state.getLargestCity(), state.getCapital(), state.getPopulation());
-        }
-    }
-    void clearTable() throws SQLException {
-        connection.prepareStatement("drop table States").execute();
-    }
-    void close() throws SQLException {
-        connection.close();
-    }
+class CreateStates {
+    static final String TABLE_NAME = "States";
+    static final String NAME = "stateName";
+    static final String REGION = "region";
+    static final String LARGEST_CITY = "largestCity";
+    static final String CAPITAL = "capital";
+    static final String POPULATION = "population";
+    static final Connection connection = MyConnection.getConnection();
+
     public static void main(String[] args) {
         CreateStates states = new CreateStates();
         try {
@@ -80,10 +49,62 @@ public class CreateStates {
             states.addState(new State("New Jersey", "darkwest", "Gotham", "Metropolis", 27893202));
             states.addState(new State("Nail", "murknorth", "Nail Head", "Nail Body", 1101));
             states.printTable();
+            states.close();
         } catch (SQLException e) {
             e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
         }
+    }
+
+    private void createTable() throws SQLException {
+        String table = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + "(" + NAME + " VARCHAR(25), " +
+                REGION + " VARCHAR(25), " + LARGEST_CITY + " VARCHAR(25), " +
+                CAPITAL + " VARCHAR(25), " + POPULATION + " INT);";
+        try (Statement statement = requireNonNull(connection).createStatement()) {
+            statement.execute(table);
+        }
+    }
+
+    private void addState(State state) throws SQLException {
+        try (PreparedStatement preparedStatement = requireNonNull(connection).prepareStatement("INSERT INTO " + TABLE_NAME + " VALUES (?, ?, ?, ?, ?)")) {
+            preparedStatement.setObject(1, state.name);
+            preparedStatement.setObject(2, state.region);
+            preparedStatement.setObject(3, state.largestCity);
+            preparedStatement.setObject(4, state.capital);
+            preparedStatement.setObject(5, state.population);
+            preparedStatement.execute();
+        }
+    }
+
+    private List<State> allStates() throws SQLException {
+        ArrayList<State> states = new ArrayList<>();
+        PreparedStatement statement = requireNonNull(connection).prepareStatement("SELECT * FROM " + TABLE_NAME);
+        ResultSet set = statement.executeQuery();
+        while (set.next()) {
+            State state = new State();
+            state.region = set.getString(REGION);
+            state.population = set.getInt(POPULATION);
+            state.largestCity = set.getString(LARGEST_CITY);
+            state.capital = set.getString(CAPITAL);
+            state.name = set.getString(NAME);
+            states.add(state);
+        }
+        return states;
+    }
+
+    private void printTable() throws SQLException {
+        out.format(ANSI_PURPLE + "\n%45s\n\n" + ANSI_RESET, "State Table");
+        out.format(ANSI_GREEN + "%15s%15s%15s%15s%15s\n\n" + ANSI_RESET, "StateName", "Region", "LargestCity", "Capital", "Population");
+        List<State> states = allStates();
+        for (State state : states) {
+            out.format("%15s%15s%15s%15s%15s\n", state.name, state.region, state.largestCity, state.capital, state.population);
+        }
+    }
+
+    private void clearTable() throws SQLException {
+        requireNonNull(connection).prepareStatement("DROP TABLE " + TABLE_NAME).execute();
+    }
+
+    private void close() throws SQLException {
+        requireNonNull(connection).close();
     }
 }
